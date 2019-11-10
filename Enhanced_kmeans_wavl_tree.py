@@ -7,7 +7,6 @@ import collections
 import cv2
 from PIL import Image
 from scipy import misc
-from wavl import*
 
 
 
@@ -37,7 +36,7 @@ class Kmeans:
         self.K = K
         self.points = []
         self.clusters = []
-        self.tree = WAVLTree()
+        self.tree = {}
 
     def Euclidian_distance(self, p1, center):
         return distance.euclidean(p1, center)
@@ -49,7 +48,7 @@ class Kmeans:
         if self.K>len(self.points):
             return
         self.points = np.array(self.points).astype(float)
-        np.random.seed(42)
+        #np.random.seed(42)
         random_index = np.random.choice(range(len(self.points)), self.K, replace=False)
         centroids = self.points[random_index]
         for i in range(self.K):
@@ -62,9 +61,8 @@ class Kmeans:
                 distance_to_centroid[i][j] = self.Euclidian_distance(self.points[i],centroids[j])
 
         for i in range(len(self.points)):
-            self.tree.insert(i,distance_to_centroid[i])
-            # self.tree[i] = distance_to_centroid[i]
-            k = np.argmin(self.tree.find(i).value)
+            self.tree[i] = distance_to_centroid[i]
+            k = np.argmin(self.tree[i])
             self.clusters[k].addpoint(i)
 
         for i in range(self.K):
@@ -113,9 +111,9 @@ class Kmeans:
                     if(changeArray[j]==1):
                         distance_to_centroid[i][j] = self.Euclidian_distance(self.points[i], centroids[j])
 
-                pre = np.argmin(self.tree.find(i).value)
-                self.tree.find(i).value = distance_to_centroid[i]
-                k = np.argmin(self.tree.find(i).value)
+                pre = np.argmin(self.tree[i])
+                self.tree[i] = distance_to_centroid[i]
+                k = np.argmin(self.tree[i])
                 self.clusters[k].addpoint(i)
 
 
@@ -141,17 +139,34 @@ class Kmeans:
                 replaceList[self.clusters[i].clusterList[j]] = self.clusters[i].clusterCentroid.tolist()
         print(replaceList)
         return replaceList
+        
+    def storePointId(self):
+        with open('/home/shashikanth/DSA_project/listfile.txt', 'w') as MyFile:
+            for i in range(self.K):
+                for element in self.clusters[i].clusterList:
+                    print(element)
+                    MyFile.write(str(element)+" ")
+                MyFile.write('\n')
+
+        with open('/home/shashikanth/DSA_project/centroid.txt', 'w') as MyFile:
+            for i in range(self.K):
+                for element in self.clusters[i].clusterCentroid:
+                    print(element)
+                    MyFile.write(str(element)+" ")
+                MyFile.write('\n')
+
+    
 
 
-image_seg_orig = cv2.imread("image1.png")
-image_seg_orig = cv2.cvtColor(image_seg_orig,cv2.COLOR_BGR2RGB)
+image_seg_orig = cv2.imread("Shashi.jpg")
 cap = cv2.resize(image_seg_orig, (256,256))
+cap = cv2.cvtColor(cap,cv2.COLOR_BGR2RGB)
 h,w,z = cap.shape
 textFileList = []
 biglist=[]
-for x in range (0,h,1):
+for y in range (0,h,1):
     list = []
-    for y in range(0,w,1):
+    for x in range(0,w,1):
         color = cap[y,x]
         list.append(color)
         textFileList.append(color.tolist())
@@ -163,7 +178,7 @@ new_image = Image.fromarray(array)
 new_image.save('compressed_orig.png')
 
 
-k_means_text = open("k_means.txt",'w')
+k_means_text = open("image_pixelsnew.txt",'w')
 for item in textFileList:
     k_means_text.write(str(item[0]))
     k_means_text.write(" ")
@@ -174,17 +189,19 @@ for item in textFileList:
 k_means_text.close()
 
 
-obj = Kmeans(400,9)
-data = np.loadtxt("k_means.txt")
+obj = Kmeans(400,64)
+data = np.loadtxt("image_pixelsnew.txt")
 print(len(data),"is the length of the data")
 obj.fit(data)
 obj.run()
+obj.storePointId()
 valuesReplacedList = obj.storeValues(textFileList)
+
 newImageList = []
 k=0
-for i in range(h):
+for i in range(w):
     subList = []
-    for j in range(w):
+    for j in range(h):
         subList.append(valuesReplacedList[k])
         k=k+1
     newImageList.append(subList)
