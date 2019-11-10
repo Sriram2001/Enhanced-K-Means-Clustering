@@ -7,6 +7,7 @@ import collections
 import cv2
 from PIL import Image
 from scipy import misc
+from wavl import*
 
 
 
@@ -36,7 +37,7 @@ class Kmeans:
         self.K = K
         self.points = []
         self.clusters = []
-        self.tree = {}
+        self.tree = WAVLTree()
 
     def Euclidian_distance(self, p1, center):
         return distance.euclidean(p1, center)
@@ -48,7 +49,7 @@ class Kmeans:
         if self.K>len(self.points):
             return
         self.points = np.array(self.points).astype(float)
-        #np.random.seed(42)
+        np.random.seed(42)
         random_index = np.random.choice(range(len(self.points)), self.K, replace=False)
         centroids = self.points[random_index]
         for i in range(self.K):
@@ -61,8 +62,9 @@ class Kmeans:
                 distance_to_centroid[i][j] = self.Euclidian_distance(self.points[i],centroids[j])
 
         for i in range(len(self.points)):
-            self.tree[i] = distance_to_centroid[i]
-            k = np.argmin(self.tree[i])
+            self.tree.insert(i,distance_to_centroid[i])
+            # self.tree[i] = distance_to_centroid[i]
+            k = np.argmin(self.tree.find(i).value)
             self.clusters[k].addpoint(i)
 
         for i in range(self.K):
@@ -111,9 +113,9 @@ class Kmeans:
                     if(changeArray[j]==1):
                         distance_to_centroid[i][j] = self.Euclidian_distance(self.points[i], centroids[j])
 
-                pre = np.argmin(self.tree[i])
-                self.tree[i] = distance_to_centroid[i]
-                k = np.argmin(self.tree[i])
+                pre = np.argmin(self.tree.find(i).value)
+                self.tree.find(i).value = distance_to_centroid[i]
+                k = np.argmin(self.tree.find(i).value)
                 self.clusters[k].addpoint(i)
 
 
@@ -139,23 +141,7 @@ class Kmeans:
                 replaceList[self.clusters[i].clusterList[j]] = self.clusters[i].clusterCentroid.tolist()
         print(replaceList)
         return replaceList
-        
-    def storePointId(self):
-        with open('/home/shashikanth/DSA_project/listfile.txt', 'w') as MyFile:
-            for i in range(self.K):
-                for element in self.clusters[i].clusterList:
-                    print(element)
-                    MyFile.write(str(element)+" ")
-                MyFile.write('\n')
 
-        with open('/home/shashikanth/DSA_project/centroid.txt', 'w') as MyFile:
-            for i in range(self.K):
-                for element in self.clusters[i].clusterCentroid:
-                    print(element)
-                    MyFile.write(str(element)+" ")
-                MyFile.write('\n')
-
-    
 
 
 image_seg_orig = cv2.imread("Shashi.jpg")
