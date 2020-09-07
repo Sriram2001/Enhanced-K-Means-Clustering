@@ -1,2 +1,2 @@
 # Enhanced-K-Means-Clustering
-DSA Mini Project for 3rd Semester 
+Image compression by reducing the number of colors in images using enhanced K-means clustering
